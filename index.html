@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eliminação de Gauss — noite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c1129; --bg2:#151c42; --ink:#f1ecd6; --dim:#9aa2c7; --line:#2b3568;
+  --pivot:#f2c96b; --row:#8fa4ff; --ok:#7fe0c3;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0; min-height:100vh; color:var(--ink); font-family:Figtree,system-ui,sans-serif;
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%,#fff8 50%,transparent 51%),
+    radial-gradient(1px 1px at 78% 12%,#fff9 50%,transparent 51%),
+    radial-gradient(1.5px 1.5px at 88% 62%,#fff7 50%,transparent 51%),
+    radial-gradient(1px 1px at 30% 80%,#fff8 50%,transparent 51%),
+    radial-gradient(1px 1px at 55% 35%,#fff6 50%,transparent 51%),
+    radial-gradient(1px 1px at 6% 66%,#fff7 50%,transparent 51%),
+    radial-gradient(120% 80% at 85% -10%,var(--bg2),var(--bg) 60%);
+}
+main{max-width:760px;margin:0 auto;padding:28px 18px 40px}
+h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(1.5rem,4.5vw,2.1rem);margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--dim);margin:0 0 22px;font-size:.98rem}
+.stage{background:#0a0f24cc;border:1px solid var(--line);border-radius:16px;padding:20px 14px 16px;position:relative;overflow-x:auto}
+.mx{display:grid;gap:10px;width:max-content;margin:0 auto;padding:0 6px}
+.row{display:grid;grid-template-columns:34px repeat(3,74px) 14px 74px 70px;align-items:center;gap:6px;border-radius:12px;padding:6px 4px;border:1.5px solid transparent;transition:background .5s,border-color .5s}
+.row.tgt{background:#8fa4ff1f;border-color:var(--row)}
+.row.pv{background:#f2c96b1a;border-color:#f2c96b88}
+.lab{font-size:.85rem;color:var(--dim);text-align:center}
+.c{font-family:Fraunces,Georgia,serif;font-size:1.45rem;text-align:center;padding:8px 0;border-radius:8px;transition:color .4s,background .4s}
+.c.piv{background:var(--pivot);color:#1a1530;font-weight:600}
+.c.chg{animation:pop 1s ease-out}
+.sep{height:100%;border-left:2px dashed var(--line);justify-self:center}
+.chip{font-size:.78rem;color:var(--row);opacity:0;transition:opacity .4s;text-align:left;line-height:1.2}
+.chip.on{opacity:1}
+@keyframes pop{0%{background:var(--ok);color:#0c1129;transform:scale(1.18)}100%{background:transparent;transform:scale(1)}}
+.msg{min-height:92px;margin:16px 2px 6px;padding:14px 16px;border-left:3px solid var(--pivot);background:#ffffff08;border-radius:0 12px 12px 0;font-size:1.02rem;line-height:1.5}
+.msg b{color:var(--pivot);font-weight:600}
+.sol{display:flex;gap:10px;margin:10px 0 4px;flex-wrap:wrap}
+.sv{flex:1;min-width:90px;border:1.5px dashed var(--line);border-radius:12px;padding:10px;text-align:center;font-family:Fraunces,Georgia,serif;font-size:1.3rem;color:var(--dim);transition:all .5s}
+.sv.on{border-style:solid;border-color:var(--ok);color:var(--ok);background:#7fe0c314}
+.bar{height:4px;background:var(--line);border-radius:4px;margin:16px 0 14px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--row),var(--pivot));transition:width .5s}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;color:var(--ink);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer;min-height:40px}
+button:hover{border-color:var(--row)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--pivot);outline-offset:2px}
+button.main{background:var(--pivot);color:#1a1530;border-color:var(--pivot);font-weight:600;min-width:104px}
+.ctl label{margin-left:auto;color:var(--dim);font-size:.9rem;display:flex;gap:8px;align-items:center}
+.cnt{color:var(--dim);font-size:.9rem;margin-left:4px}
+@media (prefers-reduced-motion:reduce){.c.chg{animation:none}.row,.sv,.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Eliminação de Gauss, passo a passo</h1>
+  <p class="sub">2x + y − z = 8 &nbsp;|&nbsp; −3x − y + 2z = −11 &nbsp;|&nbsp; −2x + y + 2z = −3</p>
+  <section class="stage" aria-label="Matriz aumentada">
+    <div class="mx" id="mx"></div>
+  </section>
+  <div class="msg" id="msg" aria-live="polite"></div>
+  <div class="sol" id="sol"></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="ctl">
+    <button id="prev">Voltar</button>
+    <button id="play" class="main">Pausar</button>
+    <button id="next">Avançar</button>
+    <button id="rst">Reiniciar</button>
+    <span class="cnt" id="cnt"></span>
+    <label>Velocidade <input type="range" id="spd" min="1" max="5" value="3"></label>
+  </div>
+</main>
+<script>
+const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+const F=(n,d=1)=>{if(d<0){n=-n;d=-d}const g=gcd(n,d)||1;return{n:n/g,d:d/g}};
+const sub=(a,b)=>F(a.n*b.d-b.n*a.d,a.d*b.d), mul=(a,b)=>F(a.n*b.n,a.d*b.d), div=(a,b)=>F(a.n*b.d,a.d*b.n);
+const fmt=a=>(a.d===1?''+a.n:a.n+'/'+a.d).replace('-','−');
+const N=['x','y','z'];
+let M=[[2,1,-1,8],[-3,-1,2,-11],[-2,1,2,-3]].map(r=>r.map(v=>F(v)));
+let sol=[null,null,null];
+const S=[], snap=()=>M.map(r=>r.slice());
+const push=o=>S.push({M:snap(),sol:sol.slice(),...o});
+
+push({msg:'Esta é a <b>matriz aumentada</b> [A | b]. Vamos zerar tudo abaixo da diagonal, coluna por coluna.'});
+for(let k=0;k<2;k++){
+  push({msg:`O <b>pivô</b> da coluna ${k+1} é a<sub>${k+1}${k+1}</sub> = <b>${fmt(M[k][k])}</b>. Ele será usado para eliminar os elementos abaixo dele.`,piv:k});
+  for(let i=k+1;i<3;i++){
+    const a=M[i][k],p=M[k][k],m=div(a,p);
+    push({msg:`Multiplicador: m<sub>${i+1}${k+1}</sub> = a<sub>${i+1}${k+1}</sub> / a<sub>${k+1}${k+1}</sub> = ${fmt(a)} / ${fmt(p)} = <b>${fmt(m)}</b>`,piv:k,tgt:i,mult:m,k});
+    for(let j=k;j<4;j++)M[i][j]=sub(M[i][j],mul(m,M[k][j]));
+    push({msg:`R<sub>${i+1}</sub> ← R<sub>${i+1}</sub> − (${fmt(m)})·R<sub>${k+1}</sub>. O elemento (${i+1},${k+1}) virou <b>zero</b>.`,piv:k,tgt:i,chg:i,mult:m,k});
+  }
+}
+push({msg:'A matriz está <b>triangular superior</b>. Agora resolvemos de baixo para cima, por substituição regressiva.'});
+for(let i=2;i>=0;i--){
+  let s=M[i][3],parts=[];
+  for(let j=i+1;j<3;j++){s=sub(s,mul(M[i][j],sol[j]));parts.push(`(${fmt(M[i][j])})(${fmt(sol[j])})`);}
+  const x=div(s,M[i][i]);sol[i]=x;
+  const num=parts.length?`${fmt(M[i][3])} − ${parts.join(' − ')}`:fmt(M[i][3]);
+  push({msg:`Linha ${i+1}: ${N[i]} = (${num}) / ${fmt(M[i][i])} = <b>${fmt(x)}</b>`,piv:i,tgt:i});
+}
+push({msg:`Pronto: <b>x = ${fmt(sol[0])}, y = ${fmt(sol[1])}, z = ${fmt(sol[2])}</b>. Substituindo nas equações originais, as três igualdades se confirmam.`});
+
+const $=id=>document.getElementById(id);
+let cur=0,timer=null,playing=true,prevM=null;
+function render(){
+  const s=S[cur],mx=$('mx');let h='';
+  for(let i=0;i<3;i++){
+    const cls=(s.tgt===i?'tgt':(s.piv===i&&s.tgt===undefined?'pv':''));
+    h+=`<div class="row ${cls}"><span class="lab">R${i+1}</span>`;
+    for(let j=0;j<4;j++){
+      if(j===3)h+='<span class="sep"></span>';
+      const isP=s.piv!==undefined&&i===s.piv&&j===s.piv&&(s.tgt!==undefined||true);
+      const changed=s.chg===i&&j>=s.k&&prevM&&fmt(prevM[i][j])!==fmt(s.M[i][j]);
+      h+=`<span class="c ${isP?'piv':''} ${changed?'chg':''}">${fmt(s.M[i][j])}</span>`;
+    }
+    const chip=(s.tgt===i&&s.mult&&s.k!==undefined)?`<span class="chip on">m = ${fmt(s.mult)}</span>`:'<span class="chip"></span>';
+    h+=chip+'</div>';
+  }
+  mx.innerHTML=h;
+  $('msg').innerHTML=s.msg;
+  $('sol').innerHTML=N.map((n,i)=>`<div class="sv ${s.sol[i]?'on':''}">${n} = ${s.sol[i]?fmt(s.sol[i]):'?'}</div>`).join('');
+  $('bar').style.width=(cur/(S.length-1)*100)+'%';
+  $('cnt').textContent=`${cur+1} / ${S.length}`;
+  prevM=s.M;
+}
+const delay=()=>[4200,3400,2600,1800,1100][$('spd').value-1];
+function go(n){cur=Math.max(0,Math.min(S.length-1,n));prevM=cur>0?S[cur-1].M:null;render();}
+function tick(){
+  clearTimeout(timer);
+  if(!playing)return;
+  timer=setTimeout(()=>{
+    if(cur<S.length-1){go(cur+1);tick();}else{playing=false;$('play').textContent='Repetir';}
+  },delay());
+}
+function setPlay(p){playing=p;$('play').textContent=p?'Pausar':(cur===S.length-1?'Repetir':'Continuar');if(p)tick();else clearTimeout(timer);}
+$('play').onclick=()=>{ if(!playing&&cur===S.length-1)go(0); setPlay(!playing||cur===0&&false?true:!playing); if(!playing&&cur<S.length-1){} };
+$('play').onclick=()=>{ if(playing){setPlay(false);} else { if(cur===S.length-1)go(0); setPlay(true);} };
+$('next').onclick=()=>{setPlay(false);go(cur+1);$('play').textContent='Continuar'};
+$('prev').onclick=()=>{setPlay(false);go(cur-1);$('play').textContent='Continuar'};
+$('rst').onclick=()=>{go(0);setPlay(true)};
+$('spd').oninput=()=>{if(playing)tick()};
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight')$('next').click();
+  else if(e.key==='ArrowLeft')$('prev').click();
+  else if(e.key===' '&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();$('play').click();}
+});
+go(0);tick();
+</script>
+</body>
+</html>
